@@ -5,9 +5,10 @@ import math
 import threading
 from dataclasses import dataclass
 from collections import defaultdict
+from collections.abc import Callable, Iterable
 from pathlib import Path
 import tempfile
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 import textwrap
 
 import pymupdf
@@ -968,6 +969,7 @@ class ParsedDocument:
         embed_images: bool = False,
         ignore_code: bool = False,
         show_progress: bool = False,
+        custom_bar: Callable[[Iterable[Any]], Iterable[Any]] | None = None,
         page_separators: bool = False,
         page_chunks: bool = False,
         **kwargs,
@@ -982,7 +984,7 @@ class ParsedDocument:
 
         if show_progress and len(self.pages) > 5:
             print(f"Generating markdown text...")
-            this_iterator = ProgressBar(self.pages)
+            this_iterator = custom_bar(self.pages) if custom_bar else ProgressBar(self.pages)
         else:
             this_iterator = self.pages
         for page in this_iterator:
@@ -1099,6 +1101,7 @@ class ParsedDocument:
         footer: bool = True,
         ignore_code: bool = False,
         show_progress: bool = False,
+        custom_bar: Callable[[Iterable[Any]], Iterable[Any]] | None = None,
         page_chunks: bool = False,
         table_format: str = "grid",
         table_max_width: int = 100,
@@ -1119,7 +1122,7 @@ class ParsedDocument:
 
         if show_progress and len(self.pages) > 5:
             print(f"Generating plain text ..")
-            this_iterator = ProgressBar(self.pages)
+            this_iterator = custom_bar(self.pages) if custom_bar else ProgressBar(self.pages)
         else:
             this_iterator = self.pages
         for page in this_iterator:
@@ -1296,6 +1299,7 @@ def parse_document(
     image_path="",
     pages=None,
     show_progress=False,
+    custom_bar=None,
     embed_images=False,
     write_images=False,
     force_text=False,
@@ -1420,7 +1424,7 @@ def parse_document(
 
     if show_progress and len(page_filter) >= 5:
         print(f"Parsing {len(page_filter)} pages of '{document.filename}'...")
-        page_filter = ProgressBar(page_filter)
+        page_filter = custom_bar(page_filter) if custom_bar else ProgressBar(page_filter)
 
     for pno in page_filter:
         page = mydoc.load_page(pno)
